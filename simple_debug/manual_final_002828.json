@@ -1,0 +1,16 @@
+{
+  "url": "https://doska.orbita.co.il/anons/?anons=5330632&addsuccess=1",
+  "title": "Доска объявлений Израиля » Дом. Животные",
+  "forms": [
+    {
+      "index": 0,
+      "action": "https://doska.orbita.co.il/search/",
+      "method": "get",
+      "data": {
+        "q": "",
+        "engine": "g",
+        "cat_show": "0"
+      }
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "url": "https://doska.orbita.co.il/my/add/",
+  "title": "Доска объявлений Израиля » Добавить объявление",
+  "forms": [
+    {
+      "index": 0,
+      "action": "https://doska.orbita.co.il/search/",
+      "method": "get",
+      "data": {
+        "q": "",
+        "engine": "g",
+        "cat_show": "0"
+      }
+    },
+    {
+      "index": 1,
+      "action": "https://doska.orbita.co.il/my/add/",
+      "method": "post",
+      "data": {
+        "board": "16",
+        "city": "0",
+        "info": "Отдохну",
+        "photo[]": "[object File]",
+        "txtphoto[]": "",
+        "email": "111@gmail.com",
+        "phonecode": "1",
+        "phonenum": "",
+        "g-recaptcha-response": "03AFcWeA5ZtXHAnOEp_Pt6n5KDrUyDlkRLQeKeZnFc4zKGa4-81nTAdspnpt9TJq-NAyUoGsdSINenfFH6pC_YD_YNyYxQto4aYyYjsSfZXqNDTcicdAnTPCmEDvByQE6TbaCO0eb5NL3IeMTV91Qo-KS4KcLGPrknSm7tyvlFO3jh0nJUUKOdc_ak5SxyZGifrh1CKM4ooYhp8qPoEZ5pfASl_lsVO0i2WJTrsnXucXhcheFbgVutE43XIF6VQzHTcWquy6jSJromhTF70cutc69Qya9eWwdpTdLe73xG349T0ZFeeFytJPcy5Eptl6nptvwr_t5hA6l6nj8tWAgiWu_uPrFva8tgxP-4FUvEUZ1Ka1jwCEUEXZQSZ-8bgEZaRVLA8h1SVYZWHV1X5JkbDTzGvqkSGl6K44YMKhnXoXiIG2Bd6ViNxU_Zj0dXJNAmK2mNctLPo9hlKucUuMuSvHjXlc5m7AERer-LLzF2Z3y0vvZF5a82intfvxqbIS9vD4aJHgPA0DlkdTSgfKNh-9g0mLxsWL0fNsfmkGCBOYwpwrnFtLlYCv2tN2bQ81vapWoxwX1fdDhe6s0lSsdAlF4h063jraW1CNtLWz0dI2gV0b5NC7Fqm6naFgFmutffyD1KvIhldtkApoj-pjOwmRx8QdRinsQT0dKKnBzxoG38z_eu6Aw2bfans305a8VYxHZbvWurngQDs6RQp3ZsCk1XW9WJwnpM_53ZsZxF6pbvqJSsuCSK1WdadB8uoI0f8BPXzEgXhlT3Xgggq-b0SikXieNCUtJna4kwjOh8ABsdIb8KJE-XwgXtbcq6vvqT23GOvDy08MybQpQKyeneoOq1D1CqvYY9zHYdXfyU66q9Zq4esElCsllnSjF3TaQ1IjI2WGAdD6jqFD875HGk8YI8K166z3F7C4U-YibiJvPowqdzYaNQ89LsuOs_gpfjgsNvnlzT_wKssC5jzjN7buaWHNSuNPPNYQ",
+        "terms": "on",
+        "add_message": "1"
+      }
+    }
+  ]
+}

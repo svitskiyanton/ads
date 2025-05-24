@@ -1,0 +1,34 @@
+{
+  "url": "https://doska.orbita.co.il/my/add/",
+  "title": "Доска объявлений Израиля » Добавить объявление",
+  "forms": [
+    {
+      "index": 0,
+      "action": "https://doska.orbita.co.il/search/",
+      "method": "get",
+      "data": {
+        "q": "",
+        "engine": "g",
+        "cat_show": "0"
+      }
+    },
+    {
+      "index": 1,
+      "action": "https://doska.orbita.co.il/my/add/",
+      "method": "post",
+      "data": {
+        "board": "16",
+        "city": "0",
+        "info": "Отдохну",
+        "photo[]": "[object File]",
+        "txtphoto[]": "",
+        "email": "111@gmail.com",
+        "phonecode": "1",
+        "phonenum": "",
+        "g-recaptcha-response": "",
+        "terms": "on",
+        "add_message": "1"
+      }
+    }
+  ]
+}

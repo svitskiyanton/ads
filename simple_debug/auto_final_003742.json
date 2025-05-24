@@ -1,0 +1,25 @@
+{
+  "url": "https://passport.orbita.co.il/site/login/",
+  "title": "Войти",
+  "forms": [
+    {
+      "index": 0,
+      "action": "https://passport.orbita.co.il/site/login",
+      "method": "post",
+      "data": {
+        "LoginForm[email]": "",
+        "LoginForm[password]": ""
+      }
+    },
+    {
+      "index": 1,
+      "action": "https://passport.orbita.co.il/site/register",
+      "method": "post",
+      "data": {
+        "SignupForm[email]": "",
+        "SignupForm[password]": "",
+        "SignupForm[name]": ""
+      }
+    }
+  ]
+}

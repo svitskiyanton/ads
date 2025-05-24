@@ -1,0 +1,7 @@
+# Example log file showing processed ads
+# Format: ad/YYYYMMDD/HHMM # Processed on timestamp
+ 
+ad/20250523/1445 # Processed on 2025-01-23 14:45:12
+ad/20250523/1511 # Processed on 2025-01-23 15:11:05
+ad/20250522/1112 # Processed on 2025-01-23 15:15:30
+ad/20250522/0912 # Processed on 2025-01-23 15:20:45 
