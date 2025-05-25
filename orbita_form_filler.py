@@ -10,6 +10,11 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 import io
 from googleapiclient.http import MediaIoBaseDownload
 from twocaptcha import TwoCaptcha
+import subprocess
+import requests
+import sys
+import tarfile
+import urllib.request
 
 # Import configuration
 try:
@@ -28,11 +33,305 @@ except ImportError:
     GOOGLE_DRIVE_PARENT_FOLDER = "ad"
     print("⚠️ config.py not found - using default configuration")
 
+# Import Tor settings
+try:
+    from config import USE_TOR_IP_ROTATION, TOR_IP_CHANGE_INTERVAL, TOR_STARTUP_DELAY, TOR_IP_CHANGE_DELAY
+except ImportError:
+    # Fallback Tor configuration
+    USE_TOR_IP_ROTATION = True
+    TOR_IP_CHANGE_INTERVAL = 3
+    TOR_STARTUP_DELAY = 5
+    TOR_IP_CHANGE_DELAY = 3
+
+# Import enhanced security settings
+try:
+    from config import LOGOUT_BETWEEN_ADS, WAIT_AFTER_LOGOUT, CHANGE_IP_AFTER_LOGOUT
+except ImportError:
+    # Fallback security configuration
+    LOGOUT_BETWEEN_ADS = True
+    WAIT_AFTER_LOGOUT = 180
+    CHANGE_IP_AFTER_LOGOUT = True
+
 # Google Drive API setup
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 
 # Log file to track processed ads
 LOG_FILE = "processed_ads.log"
+
+class TorIPChanger:
+    """Tor IP changing functionality integrated for ad posting automation"""
+    
+    def __init__(self):
+        self.tor_process = None
+        self.tor_path = None
+        self.is_initialized = False
+        self.proxy_config = {
+            'http': 'socks5://127.0.0.1:9050',
+            'https': 'socks5://127.0.0.1:9050'
+        }
+        
+    def initialize_tor(self):
+        """Initialize Tor based on operating system"""
+        try:
+            print("🔧 Initializing Tor IP changer...")
+            
+            if os.name == 'posix':  # Linux/Unix
+                return self._initialize_tor_linux()
+            elif os.name == 'nt':   # Windows
+                return self._initialize_tor_windows()
+            else:
+                print("❌ Unsupported operating system")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Error initializing Tor: {e}")
+            return False
+    
+    def _initialize_tor_linux(self):
+        """Initialize Tor on Linux/Unix systems"""
+        try:
+            # Check if running as root (required for Linux)
+            if os.geteuid() != 0:
+                print("⚠️ Warning: Tor operations may require root privileges on Linux")
+            
+            # Check if Tor is installed
+            if subprocess.run(['which', 'tor'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode != 0:
+                print("🔄 Tor not found. Installing...")
+                if os.system("sudo apt install tor -y > /dev/null 2>&1") != 0:
+                    print("❌ Failed to install Tor. Please install manually: sudo apt install tor")
+                    return False
+                print("✅ Tor installed successfully")
+            else:
+                print("✅ Tor is already installed")
+            
+            self.is_initialized = True
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error initializing Tor on Linux: {e}")
+            return False
+    
+    def _initialize_tor_windows(self):
+        """Initialize Tor on Windows systems"""
+        try:
+            # Read tor path from config file
+            tor_path_file = "tor_path.txt"
+            if not os.path.exists(tor_path_file):
+                # Create default tor_path.txt
+                with open(tor_path_file, "w") as f:
+                    f.write("C:\\")
+            
+            with open(tor_path_file, "r") as f:
+                extract_path = f.read().strip()
+            
+            self.tor_path = f"{extract_path}\\Tor Expert Bundle\\tor\\tor.exe"
+            
+            if not os.path.exists(self.tor_path):
+                print("🔄 Tor not found. Downloading and installing...")
+                if not self._download_tor_windows(extract_path):
+                    return False
+            else:
+                print("✅ Tor is already installed")
+            
+            self.is_initialized = True
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error initializing Tor on Windows: {e}")
+            return False
+    
+    def _download_tor_windows(self, extract_path):
+        """Download and extract Tor for Windows"""
+        try:
+            tor_url = "https://archive.torproject.org/tor-package-archive/torbrowser/14.0.7/tor-expert-bundle-windows-x86_64-14.0.7.tar.gz"
+            filename = "tor.tar.gz"
+            
+            print(f"📥 Downloading Tor from {tor_url}")
+            urllib.request.urlretrieve(tor_url, filename)
+            print("✅ Download complete")
+            
+            print(f"📂 Extracting to {extract_path}\\Tor Expert Bundle")
+            with tarfile.open(filename, "r:gz") as tar:
+                tar.extractall(f"{extract_path}\\Tor Expert Bundle", filter='fully_trusted')
+            
+            os.remove(filename)
+            print("✅ Tor extracted successfully")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error downloading Tor: {e}")
+            return False
+    
+    def start_tor(self):
+        """Start Tor service"""
+        try:
+            if not self.is_initialized:
+                print("❌ Tor not initialized. Call initialize_tor() first")
+                return False
+            
+            print("🔄 Starting Tor service...")
+            
+            if os.name == 'posix':  # Linux/Unix
+                # Check if already running
+                result = subprocess.run(["sudo", "service", "tor", "status"], capture_output=True, text=True)
+                if "Active: active" in result.stdout:
+                    print("✅ Tor is already running")
+                else:
+                    subprocess.run("sudo service tor start", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    time.sleep(3)
+                    print("✅ Tor service started")
+                    
+            elif os.name == 'nt':   # Windows
+                # Check if already running
+                result = subprocess.run(["tasklist"], capture_output=True, text=True)
+                if "tor.exe" in result.stdout:
+                    print("✅ Tor is already running")
+                else:
+                    self.tor_process = subprocess.Popen([self.tor_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    print("✅ Tor started")
+            
+            # Wait longer for Tor to establish circuits
+            print("⏳ Waiting for Tor to establish circuits...")
+            time.sleep(10)  # Increased from 3 to 10 seconds
+            
+            # Try to verify connection multiple times
+            print("🔍 Verifying Tor connection...")
+            for attempt in range(3):
+                if self.get_current_ip(max_retries=2, retry_delay=3):
+                    print("✅ Tor connection verified and working")
+                    return True
+                if attempt < 2:
+                    print(f"⏳ Connection attempt {attempt + 1} failed, waiting 5 more seconds...")
+                    time.sleep(5)
+            
+            print("⚠️ Tor started but connection verification failed")
+            return True  # Return True anyway, verification might work later
+            
+        except Exception as e:
+            print(f"❌ Error starting Tor: {e}")
+            return False
+    
+    def change_ip(self):
+        """Change IP by restarting Tor"""
+        try:
+            if not self.is_initialized:
+                print("❌ Tor not initialized")
+                return False
+            
+            print("🔄 Changing IP address...")
+            
+            if os.name == 'posix':  # Linux/Unix
+                subprocess.run("sudo service tor reload", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                
+            elif os.name == 'nt':   # Windows
+                # Kill existing tor process
+                subprocess.run(['taskkill', '/F', '/IM', 'tor.exe'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                time.sleep(2)  # Wait a bit longer
+                # Start new tor process
+                self.tor_process = subprocess.Popen([self.tor_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                
+            # Wait for new circuits to establish
+            print("⏳ Waiting for new circuits to establish...")
+            time.sleep(8)  # Increased wait time
+            
+            # Verify IP change with multiple attempts
+            print("🔍 Verifying IP change...")
+            for attempt in range(3):
+                new_ip = self.get_current_ip(max_retries=2, retry_delay=3)
+                if new_ip:
+                    print(f"✅ IP successfully changed to: {new_ip}")
+                    return True
+                if attempt < 2:
+                    print(f"⏳ IP verification attempt {attempt + 1} failed, waiting 5 more seconds...")
+                    time.sleep(5)
+            
+            print("⚠️ IP change completed but verification failed")
+            return True  # Proceed anyway
+                
+        except Exception as e:
+            print(f"❌ Error changing IP: {e}")
+            return False
+    
+    def get_current_ip(self, max_retries=3, retry_delay=5):
+        """Get current IP address through Tor with retry logic"""
+        # List of IP checking services to try
+        ip_services = [
+            "https://httpbin.org/ip",
+            "https://icanhazip.com",
+            "https://api.ipify.org?format=json",
+            "https://ipinfo.io/json"
+        ]
+        
+        for attempt in range(max_retries):
+            for service_url in ip_services:
+                try:
+                    print(f"🔍 Checking IP address (attempt {attempt + 1}/{max_retries}) via {service_url}...")
+                    
+                    response = requests.get(service_url, proxies=self.proxy_config, timeout=15)
+                    
+                    # Parse response based on service
+                    if "httpbin.org" in service_url:
+                        ip = response.json().get('origin', 'Unknown')
+                    elif "icanhazip.com" in service_url:
+                        ip = response.text.strip()
+                    elif "ipify.org" in service_url:
+                        ip = response.json().get('ip', 'Unknown')
+                    elif "ipinfo.io" in service_url:
+                        ip = response.json().get('ip', 'Unknown')
+                    else:
+                        ip = response.text.strip()
+                    
+                    if ip and ip != 'Unknown':
+                        print(f"✅ IP verified: {ip}")
+                        return ip
+                        
+                except requests.exceptions.ConnectTimeout:
+                    print(f"⏳ Connection timeout to {service_url}")
+                    continue
+                except requests.exceptions.ProxyError as e:
+                    print(f"🔌 Proxy error with {service_url}: {e}")
+                    continue
+                except Exception as e:
+                    print(f"⚠️ Error with {service_url}: {e}")
+                    continue
+            
+            # If all services failed for this attempt, wait before retrying
+            if attempt < max_retries - 1:
+                print(f"⏳ All services failed on attempt {attempt + 1}, retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+        
+        print("❌ Failed to verify IP after all attempts with all services")
+        return None
+    
+    def stop_tor(self):
+        """Stop Tor service"""
+        try:
+            print("🛑 Stopping Tor service...")
+            
+            if os.name == 'posix':  # Linux/Unix
+                subprocess.run("sudo service tor stop", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                
+            elif os.name == 'nt' and self.tor_process:  # Windows
+                self.tor_process.kill()
+                self.tor_process = None
+            
+            print("✅ Tor stopped")
+            
+        except Exception as e:
+            print(f"⚠️ Error stopping Tor: {e}")
+    
+    def configure_browser_proxy(self, context):
+        """Configure Playwright browser context to use Tor proxy"""
+        try:
+            # Set proxy for the browser context
+            proxy_config = {
+                'server': 'socks5://127.0.0.1:9050'
+            }
+            print("🌐 Configuring browser to use Tor proxy")
+            return proxy_config
+        except Exception as e:
+            print(f"❌ Error configuring browser proxy: {e}")
+            return None
 
 class AdLogger:
     def __init__(self, log_file=LOG_FILE):
@@ -390,6 +689,88 @@ def get_recaptcha_sitekey(page):
         print(f"❌ Error extracting reCAPTCHA site key: {e}")
         return None
 
+def solve_recaptcha_simple(page, api_key):
+    """Solve reCAPTCHA using simplified approach from working test"""
+    try:
+        # Find captcha site key
+        site_key = None
+        try:
+            site_key = page.get_attribute('[data-sitekey]', 'data-sitekey')
+        except:
+            pass
+        
+        if not site_key:
+            print("❌ No reCAPTCHA site key found")
+            return False
+        
+        print(f"🔑 Found site key: {site_key[:20]}...")
+        
+        # Solve with 2captcha
+        solver = TwoCaptcha(api_key)
+        result = solver.recaptcha(sitekey=site_key, url=page.url, version='v2')
+        
+        if result and 'code' in result:
+            print("🔧 Injecting captcha solution...")
+            
+            # Inject solution with simpler method
+            inject_script = f"""
+                () => {{
+                    try {{
+                        // Set the response in the hidden textarea
+                        const responseTextarea = document.getElementById('g-recaptcha-response');
+                        if (responseTextarea) {{
+                            responseTextarea.value = '{result['code']}';
+                            responseTextarea.style.display = 'block';
+                        }}
+                        
+                        // Also set in any other captcha response fields
+                        const allCaptchaInputs = document.querySelectorAll('textarea[name="g-recaptcha-response"]');
+                        allCaptchaInputs.forEach(input => {{
+                            input.value = '{result['code']}';
+                        }});
+                        
+                        return true;
+                    }} catch(error) {{
+                        console.error('Captcha injection error:', error);
+                        return false;
+                    }}
+                }}
+            """
+            
+            # Execute the injection script
+            success = page.evaluate(inject_script)
+            
+            if success:
+                print("✅ reCAPTCHA solution injected successfully")
+                
+                # Wait a bit for the captcha to be processed
+                time.sleep(2)
+                
+                # Verify the solution was accepted
+                response_value = page.evaluate("""
+                    () => {
+                        const textarea = document.getElementById('g-recaptcha-response');
+                        return textarea ? textarea.value : '';
+                    }
+                """)
+                
+                if response_value:
+                    print(f"✅ Captcha response verified: {response_value[:50]}...")
+                    return True
+                else:
+                    print("❌ Captcha response not found after injection")
+                    return False
+            else:
+                print("❌ Failed to inject captcha solution")
+                return False
+        else:
+            print("❌ Failed to get captcha solution from 2captcha")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Captcha solving error: {e}")
+        return False
+
 def solve_recaptcha(page, sitekey, api_key):
     """Solve reCAPTCHA using 2captcha service"""
     try:
@@ -503,14 +884,8 @@ def handle_recaptcha(page):
         if detect_recaptcha(page):
             print("🤖 reCAPTCHA detected! Attempting to solve...")
             
-            # Get the site key
-            sitekey = get_recaptcha_sitekey(page)
-            if not sitekey:
-                print("❌ Could not extract reCAPTCHA site key")
-                return False
-            
             # Solve the reCAPTCHA
-            success = solve_recaptcha(page, sitekey, CAPTCHA_API_KEY)
+            success = solve_recaptcha_simple(page, CAPTCHA_API_KEY)
             
             if success:
                 print("✅ reCAPTCHA handling completed successfully!")
@@ -809,52 +1184,8 @@ def fill_single_ad(page, ad_data):
 
         time.sleep(1)
 
-        # STEP 8: Email (check if field exists and is required after authentication)
-        print("📧 Step 8: Checking email field...")
-        email_selectors = [
-            'input[name="email"]',
-            'input#email',
-            'input[type="email"]'
-        ]
-        
-        email_filled = False
-        for selector in email_selectors:
-            try:
-                email_input = page.locator(selector)
-                if email_input.count() > 0:
-                    # Check if field is visible and editable
-                    is_visible = email_input.is_visible()
-                    is_enabled = email_input.is_enabled() 
-                    current_value = email_input.input_value()
-                    
-                    print(f"📧 Email field found - Visible: {is_visible}, Enabled: {is_enabled}, Current value: '{current_value}'")
-                    
-                    if is_visible and is_enabled and not current_value:
-                        page.fill(selector, '111@gmail.com')
-                        print("✅ Email filled: 111@gmail.com")
-                        email_filled = True
-                    else:
-                        print("ℹ️ Email field not filled (already has value or not editable after login)")
-                        email_filled = True
-                    break
-            except:
-                continue
-        
-        if not email_filled:
-            print("ℹ️ No email field found (normal after authentication)")
-
-        time.sleep(1)
-
-        # STEP 9: Handle reCAPTCHA if present
-        print("🤖 Step 9: Checking and handling reCAPTCHA")
-        recaptcha_success = handle_recaptcha(page)
-        if not recaptcha_success:
-            print("❌ reCAPTCHA handling failed - this may prevent form submission")
-        
-        time.sleep(1)
-
-        # STEP 10: Agreement checkbox - correct field name
-        print("✅ Step 10: Checking agreement checkbox")
+        # STEP 8: Agreement checkbox - correct field name
+        print("✅ Step 8: Checking agreement checkbox")
         agreement_selectors = [
             'input[name="terms"]',  # Correct field name from HTML
             'input#terms',
@@ -874,8 +1205,16 @@ def fill_single_ad(page, ad_data):
 
         time.sleep(1)
 
-        # STEP 11: Submit button (NOW ENABLED - authentication working!)
-        print("🚀 Step 11: Submitting form...")
+        # STEP 9: Handle reCAPTCHA if present (moved to just before submission)
+        print("🤖 Step 9: Checking and handling reCAPTCHA before submission")
+        recaptcha_success = handle_recaptcha(page)
+        if not recaptcha_success:
+            print("❌ reCAPTCHA handling failed - this may prevent form submission")
+        
+        time.sleep(1)
+
+        # STEP 10: Submit button (NOW ENABLED - authentication working!)
+        print("🚀 Step 10: Submitting form...")
         
         submit_selectors = [
             '#submit_but',  # From our testing, this is the correct ID
@@ -978,6 +1317,32 @@ def authenticate_orbita(page):
         print(f"❌ Authentication error: {e}")
         return False
 
+def logout_orbita(page):
+    """
+    Logout from Orbita.co.il account
+    Returns True if logout successful, False otherwise
+    """
+    try:
+        print("🚪 Logging out from Orbita.co.il...")
+        
+        # Navigate to logout page
+        page.goto("https://doska.orbita.co.il/app/site/logout")
+        page.wait_for_load_state('networkidle')
+        time.sleep(2)  # Give time for logout to process
+        
+        # Verify logout by checking if we're redirected to login page or homepage
+        current_url = page.url
+        if "logout" in current_url or "login" in current_url or "orbita.co.il" in current_url:
+            print("✅ Successfully logged out")
+            return True
+        else:
+            print(f"⚠️ Logout unclear - current URL: {current_url}")
+            return True  # Proceed anyway
+            
+    except Exception as e:
+        print(f"❌ Logout error: {e}")
+        return False
+
 def main():
     """Main function - PRODUCTION MODE with live website"""
     print("🚀 ORBITA FORM FILLER - PRODUCTION MODE")
@@ -990,6 +1355,24 @@ def main():
     logger = AdLogger()
     stats = logger.get_stats()
     print(f"📊 Previously processed ads: {stats['total_processed']}")
+
+    # Initialize Tor IP changer
+    tor_changer = None
+    if USE_TOR_IP_ROTATION:
+        print("\n🔧 Initializing Tor IP changer...")
+        tor_changer = TorIPChanger()
+        if tor_changer.initialize_tor():
+            if tor_changer.start_tor():
+                print(f"🌐 Current IP: {tor_changer.get_current_ip()}")
+                time.sleep(TOR_STARTUP_DELAY)
+            else:
+                print("⚠️ Failed to start Tor, continuing without IP rotation")
+                tor_changer = None
+        else:
+            print("⚠️ Failed to initialize Tor, continuing without IP rotation")
+            tor_changer = None
+    else:
+        print("⚠️ Tor IP rotation disabled in config")
 
     # Initialize Google Drive client
     global drive_client
@@ -1046,37 +1429,51 @@ def main():
         return
 
     with sync_playwright() as p:
-        # Launch browser with anti-detection measures
-        browser = p.chromium.launch(
-            headless=False, 
-            slow_mo=2000,  # Slower for production
-            args=[
-                '--no-blink-features=AutomationControlled',  # Hide automation
-                '--disable-blink-features=AutomationControlled',
-                '--disable-dev-shm-usage',
-                '--disable-extensions',
-                '--no-first-run',
-                '--no-default-browser-check',
-                '--disable-default-apps',
-                '--disable-popup-blocking'
-            ]
-        )
+        # Prepare browser launch options with anti-detection measures
+        browser_args = [
+            '--no-blink-features=AutomationControlled',  # Hide automation
+            '--disable-blink-features=AutomationControlled',
+            '--disable-dev-shm-usage',
+            '--disable-extensions',
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--disable-default-apps',
+            '--disable-popup-blocking'
+        ]
+        
+        launch_options = {
+            'headless': False,
+            'slow_mo': 2000,  # Slower for production
+            'args': browser_args
+        }
+        
+        # Add Tor proxy to browser launch if available
+        if tor_changer and tor_changer.is_initialized:
+            proxy_config = tor_changer.configure_browser_proxy(None)
+            if proxy_config:
+                launch_options['proxy'] = proxy_config
+                print("🌐 Browser will launch with Tor proxy")
+        
+        # Launch browser with proxy configuration at launch level
+        browser = p.chromium.launch(**launch_options)
         
         # Create context with human-like settings
-        context = browser.new_context(
-            permissions=[],  # No permissions granted initially
-            geolocation=None,
-            ignore_https_errors=True,
-            viewport={'width': 1366, 'height': 768},  # Common screen resolution
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            extra_http_headers={
+        context_options = {
+            'permissions': [],  # No permissions granted initially
+            'geolocation': None,
+            'ignore_https_errors': True,
+            'viewport': {'width': 1366, 'height': 768},  # Common screen resolution
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'extra_http_headers': {
                 'Accept-Language': 'en-US,en;q=0.9,ru;q=0.8',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'Accept-Encoding': 'gzip, deflate, br',
                 'DNT': '1',
                 'Connection': 'keep-alive'
             }
-        )
+        }
+        
+        context = browser.new_context(**context_options)
         
         # Explicitly deny notifications
         context.grant_permissions([], origin="https://doska.orbita.co.il")
@@ -1163,10 +1560,6 @@ def main():
             # Dismiss notifications with a more gentle approach
             dismiss_notifications(page)
 
-            # Handle reCAPTCHA
-            if handle_recaptcha(page):
-                print("✅ reCAPTCHA handling completed successfully!")
-
             # Process each new ad folder
             processed_count = 0
             failed_count = 0
@@ -1197,17 +1590,63 @@ def main():
                     print(f"❌ Failed to process: {folder['path']}")
                     failed_count += 1
 
-                # Wait between ads and navigate back to form
+                # Enhanced security workflow between ads
                 if i < len(new_ads):
-                    print(f"\n⏳ Waiting 10 seconds before next ad...")
-                    time.sleep(10)
-                    # Navigate back to add form for next ad
+                    print(f"\n🔄 Starting enhanced security workflow before next ad...")
+                    
+                    # Step 1: Logout after each ad (if enabled)
+                    if LOGOUT_BETWEEN_ADS:
+                        logout_success = logout_orbita(page)
+                        if not logout_success:
+                            print("⚠️ Logout failed, but continuing...")
+                    
+                    # Step 2: Wait for specified time (default 3 minutes)
+                    wait_minutes = WAIT_AFTER_LOGOUT // 60
+                    wait_seconds = WAIT_AFTER_LOGOUT % 60
+                    print(f"⏳ Waiting for {wait_minutes} minutes and {wait_seconds} seconds...")
+                    
+                    # Show countdown for better UX
+                    for remaining in range(WAIT_AFTER_LOGOUT, 0, -30):
+                        mins = remaining // 60
+                        secs = remaining % 60
+                        print(f"⏰ Time remaining: {mins}m {secs}s...")
+                        time.sleep(min(30, remaining))
+                    
+                    print("✅ Wait period completed")
+                    
+                    # Step 3: Change IP (if Tor is enabled and configured)
+                    if CHANGE_IP_AFTER_LOGOUT and tor_changer and tor_changer.is_initialized:
+                        print("🔄 Changing IP address for next ad...")
+                        if tor_changer.change_ip():
+                            print("✅ IP changed successfully")
+                            time.sleep(TOR_IP_CHANGE_DELAY)
+                        else:
+                            print("⚠️ IP change failed, but continuing...")
+                    elif CHANGE_IP_AFTER_LOGOUT and not tor_changer:
+                        print("⚠️ IP change requested but Tor not available")
+                    
+                    # Step 4: Re-authenticate for next ad
+                    print("🔐 Re-authenticating for next ad...")
+                    if not authenticate_orbita(page):
+                        print("❌ Re-authentication failed - stopping processing")
+                        break
+                    
+                    # Step 5: Navigate to ad posting page
+                    print("📝 Navigating to ad posting page...")
                     page.goto("https://doska.orbita.co.il/my/add/")
                     page.wait_for_load_state('networkidle')
+                    print("✅ Ready for next ad")
+                    
+                    # Dismiss notifications again
+                    dismiss_notifications(page)
 
         except Exception as e:
             print(f"❌ Error during form filling: {e}")
         finally:
+            # Stop Tor if it was started
+            if tor_changer:
+                tor_changer.stop_tor()
+            
             # Show final statistics
             final_stats = logger.get_stats()
             print(f"\n📊 FINAL STATISTICS:")

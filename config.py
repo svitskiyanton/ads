@@ -28,4 +28,20 @@ GOOGLE_DRIVE_PARENT_FOLDER = "ad"
 
 # Debug settings
 DEBUG_SCREENSHOTS = False
-DEBUG_CONSOLE_LOGS = True 
+DEBUG_CONSOLE_LOGS = True
+
+# Tor IP Changing settings
+USE_TOR_IP_ROTATION = True  # Enable/disable Tor IP rotation
+TOR_IP_CHANGE_INTERVAL = 3  # Change IP every N ads (set to 1 for every ad, 0 to disable)
+TOR_STARTUP_DELAY = 15      # Seconds to wait after starting Tor (increased for better circuit establishment)
+TOR_IP_CHANGE_DELAY = 5     # Seconds to wait after changing IP (increased)
+
+# Enhanced security workflow settings
+LOGOUT_BETWEEN_ADS = True   # Logout after each ad for better security
+WAIT_AFTER_LOGOUT = 180     # Wait time in seconds after logout (3 minutes = 180 seconds)
+CHANGE_IP_AFTER_LOGOUT = True  # Change IP after logout (requires Tor)
+
+# Additional settings
+# Add any additional settings you need here
+
+# End of configuration file 
