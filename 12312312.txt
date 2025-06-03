@@ -1,0 +1,132 @@
+Great. 
+
+Now we change a little bit algorithm. but not too much.
+
+Before all posting you should register here
+1. Go here @https://passport.orbita.co.il/site/login/ 
+push this button
+<div class="col-md-12 text-center">
+
+                <h3><a class="reg-pop" href="/site/signup">Зарегистрироваться</a></h3>
+
+
+            </div> @login.html 
+2. Put email here
+<div class="col-md-12 text-center">
+
+                <h3><a class="reg-pop" href="/site/signup">Зарегистрироваться</a></h3>
+
+
+            </div>
+
+Generate email following way
+
+[random 7 symbols a-z]@[random 10 symbols a-z].com
+input it
+
+3. put password 'S()d8f0sdfuios23434' here
+
+<div class="mb-3 field-signupform-password required">
+
+<input type="password" id="signupform-password" class="form-control" name="SignupForm[password]" placeholder="Пароль" aria-required="true">
+
+<div class="invalid-feedback"></div>
+</div>
+
+4. Put name 'Mark' here
+
+<div class="mb-3 field-signupform-name required">
+
+<input type="text" id="signupform-name" class="form-control is-invalid" name="SignupForm[name]" placeholder="Ваше имя" aria-required="true" aria-invalid="true">
+
+<div class="invalid-feedback">Необходимо заполнить «Имя».</div>
+</div>
+
+5.  push submit button
+<div class="form-group">
+                    <button type="submit" class="btn btn-lg btn-proceed btn-success g-recaptcha" name="signup-button">Зарегистрироваться</button>
+
+
+
+                    <div style="color:#999;padding-top:5px;">
+                        Уже зарегистрированны на Orbita.co.il? <a class="sign-in-request" href="/site/login">войти</a>.
+                    </div>
+                </div>
+
+@ORBITA_FORM_FILLER_GUIDE.md 
+
+6. Then go to @https://doska.orbita.co.il/my/add/  and do as usual
+6.1 but do not logout before posting the last one
+6.2. Regarding Google Drive. Now take ads info from folders inside this folder
+Shared with me > Авто реклама > Ришон Лецион > ПРОДАЖА
+6.2.1 Inside each folder instead of looking for txt with number.txt
+and params.txt now there is one google doc file (any name)
+6.2.1.1. take all text to main text of the ad text in filling  ad form
+6.2.1.2. instead of params.txt use OpenAI LLM API to parse all parameters as
+Rooms, Floor, Furniture, Price
+Instead of Address take 'район' Ришон-ле-Циона , f.e. here
+
+'Ришон Лецион
+Продажа квартиры 
+4 комнаты, включая МАМАД ( комнату безопасности)  
+Район НАХЛАД ИУДА
+* Шикарный вид из окон ( не будет застроен никогда)
+* Очень высокий этаж
+* Родительская спальня с с/у
+* Большая гостиная
+* Солнечный балкон- 19 м на восток и север.
+(На балконе есть водопровод, газ и электричество)
+* Двойная парковка 
+* Кладовая комната
+* В квартире никто не жил
+* В  доме 4 лифта .
+* Представительное лобби
+* Невероятно удобный выезд из города
+Для доп вопросов, а так же назначения времени просмотра
+'
+
+take 'НАХЛАД ИУДА' for address
+
+And here 
+'
+
+
+
+Ришон Лецион
+РЕМЕЗ
+Продается квартира ( очень большая -137 м)
+* 5 комнат
+* Комната безопасности ( мамад)
+* 2 туалета
+* Балкон -14 м
+* Лифт
+* ГРОМАДНЫЙ салон
+* место для обеденной зоны
+* есть опция сделать еще одну комнату или кабинет
+* Вселение может быть очень гибким и быстрым
+* Пешеходная доступность к лучшей школе Ришон Лециона
+* Рядом отличный парк.
+* Удобный выезд из города.
+Для доп вопросов :
+'
+take 'РЕМЕЗ', so it should be proper promt to find inside text of add area of Rishon LeZion in russian
+
+Use 'GPT-4.1 nano' and prepare now proper prompt saving it in the Project
+So you send to OpenAI via API text of the add, prompt and receive just requireed params (if there some is not found inside , do not input it in the form , no problem)
+
+inside google drive folder take just first 5 (or less if them less than 5)
+
+before next ad wait 3 minutes (it was also in current algorythm)
+
+Is everything clear for you in algorythm changes?
+
+
+
+
+
+
+
+
+
+
+

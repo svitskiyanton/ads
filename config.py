@@ -1,45 +1,80 @@
 # Configuration file for Orbita Form Filler
 
-# 2captcha API Configuration
-# Get your API key from: https://2captcha.com/enterpage
-# Replace 'YOUR_API_KEY_HERE' with your actual 2captcha API key
-CAPTCHA_API_KEY = "1b0bad4aff52861dae002c642c027c51"  # ← Put your API key here
+# ============================================================================
+# REQUIRED CONFIGURATION - MUST BE SET BEFORE RUNNING
+# ============================================================================
 
-# Orbita.co.il Account Credentials (required for ad posting)
-# Replace with your actual account credentials
-ORBITA_LOGIN_EMAIL = "dadedex420@leabro.com"
-ORBITA_LOGIN_PASSWORD = "A)(S*DASdjkl232asjdasd"
+# 2captcha API Configuration (REQUIRED)
+# Get your API key from: https://2captcha.com/
+CAPTCHA_API_KEY = ""
 
-# Alternative CAPTCHA services (for future implementation)
-# ANTICAPTCHA_API_KEY = "YOUR_ANTICAPTCHA_API_KEY"
-# CAPSOLVER_API_KEY = "YOUR_CAPSOLVER_API_KEY"
+# OpenAI API Configuration (REQUIRED for new algorithm)
+# Get your API key from: https://platform.openai.com/
+OPENAI_API_KEY = ""
 
-# Browser settings
-BROWSER_HEADLESS = False
-BROWSER_SLOW_MO = 2000  # Milliseconds between actions
+# ============================================================================
+# BROWSER SETTINGS
+# ============================================================================
+
+# Browser behavior
+BROWSER_HEADLESS = False        # True = hidden browser, False = visible browser
+BROWSER_SLOW_MO = 2000         # Milliseconds between actions (1000-3000 recommended)
 
 # Form filling delays (in seconds)
-STEP_DELAY = 2
-RECAPTCHA_WAIT = 3
-FORM_LOAD_WAIT = 3
+STEP_DELAY = 2                 # General delay between form steps
+RECAPTCHA_WAIT = 3             # Wait time for reCAPTCHA to load
+FORM_LOAD_WAIT = 3             # Wait time for form to load completely
 
-# Google Drive settings
-GOOGLE_DRIVE_PARENT_FOLDER = "ad"
+# ============================================================================
+# TOR IP ROTATION SETTINGS
+# ============================================================================
 
-# Debug settings
-DEBUG_SCREENSHOTS = False
-DEBUG_CONSOLE_LOGS = True
+USE_TOR_IP_ROTATION = True     # Enable/disable Tor IP rotation for anonymity
+TOR_IP_CHANGE_INTERVAL = 3     # Change IP every N ads (0 = disabled)
+TOR_STARTUP_DELAY = 15         # Seconds to wait after starting Tor
+TOR_IP_CHANGE_DELAY = 5        # Seconds to wait after changing IP
 
-# Tor IP Changing settings
-USE_TOR_IP_ROTATION = True  # Enable/disable Tor IP rotation
-TOR_IP_CHANGE_INTERVAL = 3  # Change IP every N ads (set to 1 for every ad, 0 to disable)
-TOR_STARTUP_DELAY = 15      # Seconds to wait after starting Tor (increased for better circuit establishment)
-TOR_IP_CHANGE_DELAY = 5     # Seconds to wait after changing IP (increased)
+# ============================================================================
+# ENHANCED SECURITY WORKFLOW
+# ============================================================================
 
-# Enhanced security workflow settings
-LOGOUT_BETWEEN_ADS = True   # Logout after each ad for better security
-WAIT_AFTER_LOGOUT = 180     # Wait time in seconds after logout (3 minutes = 180 seconds)
+LOGOUT_BETWEEN_ADS = False     # Changed: No logout between ads, only after last ad
+WAIT_AFTER_LOGOUT = 180        # Wait time in seconds after logout (3 minutes)
 CHANGE_IP_AFTER_LOGOUT = True  # Change IP after logout (requires Tor)
+WAIT_BETWEEN_ADS = 180         # Wait 3 minutes between ads (unchanged)
+
+# ============================================================================
+# GOOGLE DRIVE SETTINGS
+# ============================================================================
+
+# Google Drive path structure - FOUND! Using discovered path structure
+# Found folder: "Real estate" with subfolder structure intact
+GOOGLE_DRIVE_PATH = "Real estate/Ришон Лецион/ПРОДАЖА"  # Complete discovered path
+MAX_IMAGES_PER_AD = 5          # Maximum images to upload per ad
+
+# Google Drive API rate limiting
+GOOGLE_DRIVE_API_DELAY = 0.5   # Reasonable delay between API calls (seconds)
+
+# Alternative paths for testing:
+# GOOGLE_DRIVE_PATH = "Real estate"  # Just the main folder
+# GOOGLE_DRIVE_PATH = "ad"  # Alternative English folder
+
+# ============================================================================
+# REGISTRATION SETTINGS (NEW ALGORITHM)
+# ============================================================================
+
+# Auto-registration settings for new accounts
+# NOTE: Each run creates a fresh account with random email
+AUTO_REGISTER_ACCOUNTS = True
+REGISTRATION_PASSWORD = "S()d8f0sdfuios23434"  # Fixed password for all accounts
+REGISTRATION_NAME = "Konstantin"               # Fixed name for all accounts
+
+# ============================================================================
+# DEBUG SETTINGS
+# ============================================================================
+
+DEBUG_SCREENSHOTS = False     # Take screenshots for debugging
+DEBUG_CONSOLE_LOGS = True     # Show detailed console logs
 
 # Additional settings
 # Add any additional settings you need here
