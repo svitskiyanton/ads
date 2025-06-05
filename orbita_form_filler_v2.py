@@ -352,15 +352,18 @@ class OpenAIExtractor:
         """Extract apartment parameters from Russian ad text using GPT-4o mini"""
         
         prompt = """
-Ты эксперт по анализу объявлений о продаже квартир в Израиле. 
+Ты эксперт по анализу объявлений о продаже квартир в Израиле, особенно в городе Ришон-ле-Цион. 
 
 Проанализируй следующий текст объявления и извлеки параметры в JSON формате:
 
 1. "rooms" - количество комнат (например: "3", "4", "5", "2.5", "4.5")
 2. "floor" - этаж (например: "2", "5", "10", "высокий этаж" -> "10+")  
 3. "furniture" - мебель (если упоминается мебель/обставлена -> "да", иначе -> "нет")
-4. "price" - цена в шекелях (только цифры, без валюты)
-5. "district" - район Ришон-ле-Циона (ищи названия районов как "НАХЛАД ИУДА", "РЕМЕЗ", "НЕВЕ ДЕНЯ" и т.д.)
+4. "price" - цена в шекелях (только цифры, без валюты). ВНИМАНИЕ: Ищи ЛЮБЫЕ длинные числа (4+ цифры), даже если они разделены пробелами или запятыми - это скорее всего цена! Например: "2 000 000", "2,500,000", "1.800.000" - все это цены.
+5. "district" - район/адрес в Ришон-ле-Ционе. ВАЖНО: Внимательно ищи слова связанные с районами Ришон-ле-Циона, улицами и адресами:
+   - Районы: "НАХЛАД ИУДА", "РЕМЕЗ", "НЕВЕ ДЕНЯ", "КИРЬЯТ ГАОН", "РАМАТ ЭЛИЯУ", "ЦЕНТР", "СТАРЫЙ ГОРОД"
+   - Улицы: "Ротшильд", "Герцль", "Жаботинский", "Бялик", "Ахад Хаам", "Рош Пина", "Вайцман", "Бен Гурион", "Соколов"
+   - Ключевые слова: "ул.", "улица", "район", "квартал", любые названия на иврите или русском связанные с Ришон-ле-Ционом
 
 Если параметр не найден, не включай его в ответ.
 
@@ -413,20 +416,43 @@ class OpenAIExtractor:
                 parameters['rooms'] = match.group(1)
                 break
         
-        # Extract district
-        districts = ['НАХЛАД ИУДА', 'РЕМЕЗ', 'НЕВЕ ДЕНЯ', 'КИРЬЯТ ГАОН', 'РАМАТ ЭЛИЯУ']
+        # Extract district - expanded list with streets
+        districts = ['НАХЛАД ИУДА', 'РЕМЕЗ', 'НЕВЕ ДЕНЯ', 'КИРЬЯТ ГАОН', 'РАМАТ ЭЛИЯУ', 'ЦЕНТР', 'СТАРЫЙ ГОРОД']
+        streets = ['РОТШИЛЬД', 'ГЕРЦЛЬ', 'ЖАБОТИНСКИЙ', 'БЯЛИК', 'АХАД ХААМ', 'РОШ ПИНА', 'ВАЙЦМАН', 'БEN ГУРИОН', 'СОКОЛОВ']
+        
+        # Check districts first
         for district in districts:
             if district in ad_text.upper():
                 parameters['district'] = district
                 break
         
-        # Extract price
-        price_match = re.search(r'(\d{1,3}(?:,?\d{3})*)\s*₪', ad_text)
-        if not price_match:
-            price_match = re.search(r'(\d{4,})', ad_text)
-        if price_match:
-            price = price_match.group(1).replace(',', '')
-            parameters['price'] = price
+        # If no district found, check streets
+        if 'district' not in parameters:
+            for street in streets:
+                if street in ad_text.upper():
+                    parameters['district'] = f"ул. {street}"
+                    break
+        
+        # Extract price - improved to handle spaces and commas
+        price_patterns = [
+            r'(\d{1,3}(?:[,\s]\d{3})*)\s*₪',  # With shekel symbol
+            r'(\d{1,3}(?:[,\s]\d{3})+)',      # Long numbers with separators (4+ digits total)
+            r'(\d{7,})',                      # Very long numbers (7+ digits)
+            r'(\d{4,6})',                     # Medium numbers (4-6 digits)
+        ]
+        
+        for pattern in price_patterns:
+            price_match = re.search(pattern, ad_text)
+            if price_match:
+                price = price_match.group(1).replace(',', '').replace(' ', '')
+                # Only consider it a price if it's reasonable (between 100k and 10M shekels)
+                try:
+                    price_num = int(price)
+                    if 100000 <= price_num <= 10000000:
+                        parameters['price'] = price
+                        break
+                except ValueError:
+                    continue
         
         print(f"✅ Fallback extracted: {parameters}")
         return parameters

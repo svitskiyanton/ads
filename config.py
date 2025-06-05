@@ -66,7 +66,7 @@ GOOGLE_DRIVE_API_DELAY = 0.5   # Reasonable delay between API calls (seconds)
 # Auto-registration settings for new accounts
 # NOTE: Each run creates a fresh account with random email
 AUTO_REGISTER_ACCOUNTS = True
-REGISTRATION_PASSWORD = "S()d8f0sdfuios23434"  # Fixed password for all accounts
+REGISTRATION_PASSWORD = ""  # Fixed password for all accounts
 REGISTRATION_NAME = "Konstantin"               # Fixed name for all accounts
 
 # ============================================================================
