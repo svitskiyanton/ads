@@ -22,7 +22,6 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 import traceback
-import logging
 
 # Core dependencies
 from playwright.sync_api import sync_playwright, Page, Browser, BrowserContext
@@ -1261,7 +1260,7 @@ class OrbitaFormFillerV2:
                     print(f"❌ Failed to process: {folder_name}")
                 
                 # Wait between ads (except for the last one)
-                if i < len(ad_folders) - 1 and result == 'success':
+                if i < len(ad_folders) - 1:
                     print(f"⏳ Waiting {config.WAIT_BETWEEN_ADS} seconds before next ad...")
                     time.sleep(config.WAIT_BETWEEN_ADS)
                     
@@ -1270,8 +1269,6 @@ class OrbitaFormFillerV2:
                         config.TOR_IP_CHANGE_INTERVAL > 0 and 
                         (i + 1) % config.TOR_IP_CHANGE_INTERVAL == 0):
                         self.tor_changer.change_ip()
-                elif i < len(ad_folders) - 1:
-                    print("⏭️ No wait needed before next ad (skipped or empty)")
             
             # Logout after processing all ads
             if config.LOGOUT_BETWEEN_ADS or stats['processed'] > 0:
@@ -1424,36 +1421,24 @@ class OrbitaFormFillerV2:
             # Select board: "Квартиры - продам" with better error handling
             try:
                 print("🏠 Selecting apartment category...")
-                board_select = self.page.locator("select").first
+                # Use robust selector first
+                board_select = self.page.locator("select[name*='board'], select[name*='category'], select").first
                 board_select.wait_for(state="visible", timeout=10000)
                 board_select.select_option(label="Квартиры - Продам")
                 print("✅ Selected category: Квартиры - Продам")
             except Exception as e:
-                print(f"⚠️ Could not select category with primary selector: {e}")
-                # Try alternative selectors
-                try:
-                    board_select = self.page.locator("select[name*='board'], select[name*='category']").first
-                    board_select.select_option(label="Квартиры - Продам")
-                    print("✅ Selected category via alternative selector")
-                except:
-                    print("❌ Could not find category selector")
+                print(f"❌ Could not select category: {e}")
             
-            # Select city: "Ришон ле Цион" with better error handling
+            # Select city: "Ришон ле Цион" using robust selector
             try:
                 print("🏙️ Selecting city...")
-                city_select = self.page.locator("select").nth(1)
+                # Use robust selector first
+                city_select = self.page.locator("select[name*='city'], select[name*='location'], select").nth(1)
                 city_select.wait_for(state="visible", timeout=10000)
                 city_select.select_option(label="Ришон ле Цион")
                 print("✅ Selected city: Ришон ле Цион")
             except Exception as e:
-                print(f"⚠️ Could not select city with primary selector: {e}")
-                # Try alternative selectors
-                try:
-                    city_select = self.page.locator("select[name*='city'], select[name*='location']").first
-                    city_select.select_option(label="Ришон ле Цион")
-                    print("✅ Selected city via alternative selector")
-                except:
-                    print("❌ Could not find city selector")
+                print(f"❌ Could not select city: {e}")
             
             time.sleep(config.STEP_DELAY)
             
